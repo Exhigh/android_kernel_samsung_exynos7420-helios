@@ -28,7 +28,7 @@
 #include <linux/sched.h>
 #include <linux/async.h>
 #include <linux/suspend.h>
-#include <linux/cpuidle.h>
+
 #include <linux/timer.h>
 #include <linux/wakeup_reason.h>
 
@@ -530,7 +530,7 @@ static void dpm_resume_noirq(pm_message_t state)
 	mutex_unlock(&dpm_list_mtx);
 	dpm_show_time(starttime, state, "noirq");
 	resume_device_irqs();
-	cpuidle_resume();
+	
 }
 
 /**
@@ -587,10 +587,6 @@ static int device_resume_early(struct device *dev, pm_message_t state)
 static void dpm_resume_early(pm_message_t state)
 {
 	ktime_t starttime = ktime_get();
-
-#ifdef CONFIG_BOEFFLA_WL_BLOCKER
-	pm_print_active_wakeup_sources();
-#endif
 
 	mutex_lock(&dpm_list_mtx);
 	while (!list_empty(&dpm_late_early_list)) {
@@ -951,7 +947,7 @@ static int dpm_suspend_noirq(pm_message_t state)
 	char suspend_abort[MAX_SUSPEND_ABORT_LEN];
 	int error = 0;
 
-	cpuidle_pause();
+	
 	suspend_device_irqs();
 	mutex_lock(&dpm_list_mtx);
 	while (!list_empty(&dpm_late_early_list)) {
@@ -1050,6 +1046,9 @@ static int dpm_suspend_late(pm_message_t state)
 		error = device_suspend_late(dev, state);
 
 		mutex_lock(&dpm_list_mtx);
+                if (!list_empty(&dev->power.entry))
+			list_move(&dev->power.entry, &dpm_late_early_list);
+		put_device(dev);
 		if (error) {
 			pm_dev_err(dev, state, " late", error);
 			suspend_stats.failed_suspend_late++;
@@ -1058,9 +1057,7 @@ static int dpm_suspend_late(pm_message_t state)
 			put_device(dev);
 			break;
 		}
-		if (!list_empty(&dev->power.entry))
-			list_move(&dev->power.entry, &dpm_late_early_list);
-		put_device(dev);
+		
 
 		if (pm_wakeup_pending()) {
 			pm_get_active_wakeup_sources(suspend_abort,

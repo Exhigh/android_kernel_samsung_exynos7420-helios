@@ -547,7 +547,7 @@ static int loop_thread(void *data)
 	struct loop_device *lo = data;
 	struct bio *bio;
 
-	set_user_nice(current, -20);
+	set_user_nice(current, MIN_NICE);
 
 	while (!kthread_should_stop() || !bio_list_empty(&lo->lo_bio_list)) {
 
@@ -586,7 +586,7 @@ static int loop_switch(struct loop_device *lo, struct file *file)
 	bio->bi_private = &w;
 	bio->bi_bdev = NULL;
 	loop_make_request(lo->lo_queue, bio);
-	wait_for_completion(&w.wait);
+	wait_for_completion_interruptible(&w.wait);
 	return 0;
 }
 
@@ -829,6 +829,7 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
 	int		lo_flags = 0;
 	int		error;
 	loff_t		size;
+        const unsigned long allowed_cpus = 0x3;
 
 	/* This is safe, since we have a reference from open(). */
 	__module_get(THIS_MODULE);
@@ -908,9 +909,15 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
 	lo->lo_thread = kthread_create(loop_thread, lo, "loop%d",
 						lo->lo_number);
 	if (IS_ERR(lo->lo_thread)) {
+                pr_err("Unable to create loop thread\n");
 		error = PTR_ERR(lo->lo_thread);
 		goto out_clr;
 	}
+
+        /* Restrict the loop thread to the power cluster to save power */
+	do_set_cpus_allowed(lo->lo_thread, to_cpumask(&allowed_cpus));
+	lo->lo_thread->flags |= PF_NO_SETAFFINITY;
+
 	lo->lo_state = Lo_bound;
 	wake_up_process(lo->lo_thread);
 	if (part_shift)
@@ -1511,8 +1518,9 @@ out:
 	return err;
 }
 
-static void __lo_release(struct loop_device *lo)
+static void lo_release(struct gendisk *disk, fmode_t mode)
 {
+	struct loop_device *lo = disk->private_data;
 	int err;
 
 	mutex_lock(&lo->lo_ctl_mutex);
@@ -1538,13 +1546,6 @@ static void __lo_release(struct loop_device *lo)
 
 out:
 	mutex_unlock(&lo->lo_ctl_mutex);
-}
-
-static void lo_release(struct gendisk *disk, fmode_t mode)
-{
-	mutex_lock(&loop_index_mutex);
-	__lo_release(disk->private_data);
-	mutex_unlock(&loop_index_mutex);
 }
 
 static const struct block_device_operations lo_fops = {

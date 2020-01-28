@@ -227,7 +227,7 @@ config DEVFREQ_WAKE_BOOST_DURATION_MS
 	  Wake boost duration in milliseconds for all boostable devices.
 
 config DEVFREQ_EXYNOS_MIF_BOOST_FREQ
-	int "Boost freq for cpubw device"
+	int "Boost freq for Exynos MIF device"
 	default "0"
 	help
 	  Boost frequency for the Exynos MIF (DDR) bus.

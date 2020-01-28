@@ -91,7 +91,7 @@ bool irq_work_needs_cpu(void)
 	struct llist_head *this_list;
 
 	this_list = &__get_cpu_var(irq_work_list);
-	if (llist_empty(this_list))
+	if (llist_empty_relaxed(this_list))
 		return false;
 
 	/* All work should have been flushed before going offline */
@@ -116,10 +116,10 @@ static void __irq_work_run(void)
 	barrier();
 
 	this_list = &__get_cpu_var(irq_work_list);
-	if (llist_empty(this_list))
+	if (llist_empty_relaxed(this_list))
 		return;
 
-	BUG_ON(!irqs_disabled());
+	
 
 	llnode = llist_del_all(this_list);
 	while (llnode != NULL) {
@@ -152,8 +152,16 @@ static void __irq_work_run(void)
  */
 void irq_work_run(void)
 {
-	BUG_ON(!in_irq());
-	__irq_work_run();
+	barrier();
+	if (in_irq()) {
+		if (irqs_disabled()) {
+			__irq_work_run();
+		} else {
+			WARN(1, "cannot run IRQ-work: IRQs enabled");
+		}
+	} else {
+		WARN(1, "cannot run IRQ-work: non-hardirq context");
+	}
 }
 EXPORT_SYMBOL_GPL(irq_work_run);
 

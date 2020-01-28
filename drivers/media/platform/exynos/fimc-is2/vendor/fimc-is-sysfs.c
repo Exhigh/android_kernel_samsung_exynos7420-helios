@@ -59,6 +59,9 @@ static struct fimc_is_from_info *front_finfo = NULL;
 static struct fimc_is_cam_info cam_infos[2];
 #endif
 
+// Force Enable
+#define SSRM_CAMERA_INFO
+
 extern bool force_caldata_dump;
 #ifdef CONFIG_OIS_USE
 static bool check_ois_power = false;
@@ -928,6 +931,14 @@ static ssize_t camera_rear_info_show(struct device *dev,
 }
 #endif
 
+#ifdef SSRM_CAMERA_INFO
+static ssize_t ssrm_camera_info_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "\n");
+}
+#endif
+
 static ssize_t camera_rear_sensor_standby(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -949,6 +960,11 @@ static ssize_t camera_rear_sensor_standby_show(struct device *dev,
 {
 	return sprintf(buf, "Rear sensor standby \n");
 }
+
+#ifdef SSRM_CAMERA_INFO
+static DEVICE_ATTR(ssrm_camera_info, S_IRUGO,
+		ssrm_camera_info_show, NULL);
+#endif
 
 #ifdef CONFIG_COMPANION_USE
 static ssize_t camera_rear_companionfw_show(struct device *dev,
@@ -1371,6 +1387,16 @@ int fimc_is_create_sysfs(struct fimc_is_core *core)
 		}
 #endif
 	}
+
+#ifdef SSRM_CAMERA_INFO
+		if (device_create_file(camera_rear_dev,
+					&dev_attr_ssrm_camera_info) < 0) {
+			printk(KERN_ERR
+				"failed to create rear device file, %s\n",
+				dev_attr_ssrm_camera_info.attr.name);
+		}
+#endif
+
 #ifdef CAMERA_SYSFS_V2
 		if (device_create_file(camera_front_dev,
 					&dev_attr_front_caminfo) < 0) {
@@ -1514,6 +1540,9 @@ int fimc_is_destroy_sysfs(struct fimc_is_core *core)
 #endif
 #ifdef CAMERA_SYSFS_V2
 		device_remove_file(camera_front_dev, &dev_attr_front_caminfo);
+#endif
+#ifdef SSRM_CAMERA_INFO
+		device_remove_file(camera_rear_dev, &dev_attr_ssrm_camera_info);
 #endif
 	}
 

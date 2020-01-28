@@ -1534,7 +1534,6 @@ static void arbiter_init(struct work_struct *work)
 
 	ipa_setup_power_tables();
 	ipa_setup_max_limits();
-
 	INIT_DELAYED_WORK(&arbiter_data.work, arbiter_poll);
 
 	arbiter_data.initialised = true;

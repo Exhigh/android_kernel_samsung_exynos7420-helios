@@ -318,7 +318,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
 			else
 				p = current;
 			if (p) {
-				niceval = 20 - task_nice(p);
+				niceval = nice_to_rlimit(task_nice(p));
 				if (niceval > retval)
 					retval = niceval;
 			}
@@ -329,7 +329,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
 			else
 				pgrp = task_pgrp(current);
 			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
-				niceval = 20 - task_nice(p);
+				niceval = nice_to_rlimit(task_nice(p));
 				if (niceval > retval)
 					retval = niceval;
 			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
@@ -345,7 +345,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
 
 			do_each_thread(g, p) {
 				if (uid_eq(task_uid(p), uid)) {
-					niceval = 20 - task_nice(p);
+					niceval = nice_to_rlimit(task_nice(p));
 					if (niceval > retval)
 						retval = niceval;
 				}
@@ -382,7 +382,6 @@ void kernel_restart_prepare(char *cmd)
 	system_state = SYSTEM_RESTART;
 
 	/* P150615-05396 : user process freeze before device shutdown */
-	events_check_enabled = false;
 	freeze_processes();
 	usermodehelper_disable();
 	ignore_fs_panic = 1;
@@ -472,7 +471,6 @@ static void kernel_shutdown_prepare(enum system_states state)
 	system_state = state;
 
 	/* P150615-05396 : user process freeze before device shutdown */
-	events_check_enabled = false;
 	freeze_processes();
 	usermodehelper_disable();
 	ignore_fs_panic = 1;

@@ -351,3 +351,10 @@ config	BOEFFLA_WL_BLOCKER
  		bool "Boeffla generic wakelock blocker driver"
  		depends on PM
  		default N
+
+config SPEEDUP_KEYRESUME
+	bool "Speed up late resume"
+	depends on SUSPEND
+	default y
+	---help---
+	  Speed up system resume

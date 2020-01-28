@@ -40,22 +40,22 @@ ro.vndk.lite=true
 ro.zygote=zygote64_32
 ro.logd.size.stats=64K
 log.tag.stats_log=I
-ro.product.name=nobleltetmo
-ro.product.device=noblelte
+ro.product.name=zeroltexx
+ro.product.device=zerolte
 ro.product.brand=Samsung
 ro.product.manufacturer=samsung
-ro.product.model=SM-N920T
-ro.vendor.product.name=nobleltetmo
-ro.vendor.product.device=noblelte
+ro.product.model=SM-G925F
+ro.vendor.product.name=zeroltexx
+ro.vendor.product.device=zerolte
 ro.vendor.product.brand=Samsung
 ro.vendor.product.manufacturer=samsung
-ro.vendor.product.model=SM-N920T
+ro.vendor.product.model=SM-G925F
 #
 # BOOTIMAGE_BUILD_PROPERTIES
 #
 ro.bootimage.build.date=Wed Jan 23 12:56:41 +03 2019
 ro.bootimage.build.date.utc=1548237401
-ro.bootimage.build.fingerprint=google/walleye/walleye:9/PQ2A.190405.003/5310204:user/release-keys
-ro.build.fingerprint=google/walleye/walleye:9/PQ2A.190405.003/5310204:user/release-keys
-ro.vendor.build.fingerprint=google/walleye/walleye:9/PQ2A.190405.003/5310204:user/release-keys
+ro.bootimage.build.fingerprint=samsung/zeroltexx/zerolte:7.0/NRD90M/G925FXXS5EQL1:user/release-keys
+ro.build.fingerprint=samsung/zeroltexx/zerolte:7.0/NRD90M/G925FXXS5EQL1:user/release-keys
+ro.vendor.build.fingerprint=samsung/zeroltexx/zerolte:7.0/NRD90M/G925FXXS5EQL1:user/release-keys
 persist.sys.usb.config=none

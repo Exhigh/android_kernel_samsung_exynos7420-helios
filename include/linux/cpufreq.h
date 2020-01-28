@@ -14,6 +14,7 @@
 #include <asm/cputime.h>
 #include <linux/mutex.h>
 #include <linux/notifier.h>
+#include <linux/pid_namespace.h>
 #include <linux/threads.h>
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
@@ -40,6 +41,18 @@
 int cpufreq_register_notifier(struct notifier_block *nb, unsigned int list);
 int cpufreq_unregister_notifier(struct notifier_block *nb, unsigned int list);
 extern void disable_cpufreq(void);
+
+/*
+ * Governor specific info that can be passed to modules that subscribe
+ * to CPUFREQ_GOVINFO_NOTIFIER
+ */
+struct cpufreq_govinfo {
+	unsigned int cpu;
+	unsigned int load;
+	unsigned int sampling_rate_us;
+};
+extern struct atomic_notifier_head cpufreq_govinfo_notifier_list;
+
 #else		/* CONFIG_CPU_FREQ */
 static inline int cpufreq_register_notifier(struct notifier_block *nb,
 						unsigned int list)
@@ -53,20 +66,6 @@ static inline int cpufreq_unregister_notifier(struct notifier_block *nb,
 }
 static inline void disable_cpufreq(void) { }
 #endif		/* CONFIG_CPU_FREQ */
-
-/* Govinfo Notifiers */
-#define CPUFREQ_LOAD_CHANGE		(0)
-
-/*
- * Governor specific info that can be passed to modules that subscribe
- * to CPUFREQ_GOVINFO_NOTIFIER
- */
-struct cpufreq_govinfo {
-	unsigned int cpu;
-	unsigned int load;
-	unsigned int sampling_rate_us;
-};
-extern struct atomic_notifier_head cpufreq_govinfo_notifier_list;
 
 /* if (cpufreq_driver->target) exists, the ->governor decides what frequency
  * within the limits is used. If (cpufreq_driver->setpolicy> exists, these
@@ -100,10 +99,6 @@ struct cpufreq_cpuinfo {
 struct cpufreq_real_policy {
 	unsigned int		min;    /* in kHz */
 	unsigned int		max;    /* in kHz */
-
-	unsigned int		user_min;    /* in kHz, untouched by kernel-space */
-	unsigned int		user_max;    /* in kHz, untouched by kernel-space */
-
 	unsigned int		policy; /* see above */
 	struct cpufreq_governor	*governor; /* see below */
 };
@@ -124,9 +119,6 @@ struct cpufreq_policy {
 	unsigned int		max;    /* in kHz */
 	unsigned int		cur;    /* in kHz, only needed if cpufreq
 					 * governors are used */
-	unsigned int		user_min;    /* in kHz, untouched by kernel-space */
-	unsigned int		user_max;    /* in kHz, untouched by kernel-space */
-
 	unsigned int		policy; /* see above */
 	struct cpufreq_governor	*governor; /* see below */
 	void			*governor_data;
@@ -408,10 +400,6 @@ extern struct cpufreq_governor cpufreq_gov_performance;
 #ifdef CONFIG_CPU_FREQ_GOV_INTERACTIVE
 extern unsigned int cpufreq_interactive_get_hispeed_freq(int cpu);
 #endif
-#ifdef CONFIG_CPU_FREQ_GOV_CAFACTIVE
-extern unsigned int cpufreq_cafactive_get_hispeed_freq(int cpu);
-extern void cafactive_boost_ondemand(int cpu, s64 miliseconds, bool static_switch);
-#endif
 #ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_performance)
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE)
@@ -429,12 +417,9 @@ extern struct cpufreq_governor cpufreq_gov_conservative;
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE)
 extern struct cpufreq_governor cpufreq_gov_interactive;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_interactive)
-#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_INTEREXTREM)
-extern struct cpufreq_governor cpufreq_gov_interextrem;
-#define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_interextrem)
-#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_CAFACTIVE)
-extern struct cpufreq_governor cpufreq_gov_cafactive;
-#define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_cafactive)
+#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_NEXUS)
+extern struct cpufreq_governor cpufreq_gov_nexus;
+#define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_nexus)
 #endif
 
 
@@ -508,6 +493,19 @@ void cpufreq_frequency_table_put_attr(unsigned int cpu);
  *                         CPUFREQ STATS                             *
  *********************************************************************/
 
+#ifdef CONFIG_CPU_FREQ_STAT
 void acct_update_power(struct task_struct *p, cputime_t cputime);
+void cpufreq_task_stats_init(struct task_struct *p);
+void cpufreq_task_stats_exit(struct task_struct *p);
+void cpufreq_task_stats_remove_uids(uid_t uid_start, uid_t uid_end);
+int  proc_time_in_state_show(struct seq_file *m, struct pid_namespace *ns,
+	struct pid *pid, struct task_struct *p);
+#else
+static inline void acct_update_power(struct task_struct *p, cputime_t cputime) {}
+static inline void cpufreq_task_stats_init(struct task_struct *p) {}
+static inline void cpufreq_task_stats_exit(struct task_struct *p) {}
+static inline void cpufreq_task_stats_remove_uids(uid_t uid_start,
+	uid_t uid_end) {}
+#endif
 
 #endif /* _LINUX_CPUFREQ_H */

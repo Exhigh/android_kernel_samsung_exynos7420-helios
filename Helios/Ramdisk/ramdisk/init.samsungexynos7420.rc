@@ -73,6 +73,7 @@ on post-fs-data
     chown system radio /sys/class/camera/rear/from_write
     chown system radio /sys/class/camera/flash/rear_flash
     chown cameraserver system /sys/class/camera/flash/rear_torch_flash
+    chown cameraserver cameraserver /sys/class/camera/rear/ssrm_camera_info
     chmod 0664 /sys/class/camera/flash/rear_flash
     chmod 0664 /sys/class/camera/flash/rear_torch_flash
     chown system radio /sys/class/camera/front/front_camfw
@@ -208,8 +209,8 @@ on boot
     # Use higher control-temperature for IPA (default: 45)
     write /sys/power/ipa/control_temp 65
 
-    # Set vibrator intensity 75%
-    write /sys/devices/virtual/timed_output/vibrator/intensity 7500
+    # Set vibrator intensity 55%
+    write /sys/devices/virtual/timed_output/vibrator/intensity 5500
 
     #setprop ro.radio.noril yes
 
@@ -290,7 +291,7 @@ on boot
     chown system radio /sys/class/android_usb/android0/usb_lock
 
 # SSWAP
-    write /proc/sys/vm/swappiness 130
+    write /proc/sys/vm/swappiness 150
 
     # FM Radio
     chmod 0640 /dev/fmradio
@@ -612,9 +613,6 @@ on fs
     chmod 0664 /factory/wv.keys
     chown system system /factory/wv.keys
 
-#ARGOSD network_throughput
-    chown system system /dev/network_throughput
-
 # TSP & Pressure Sensor
     chown system system /dev/i2c-7
     chmod 0660 /dev/i2c-7
@@ -717,12 +715,6 @@ on fs
     chown system usb /sys/class/usb_notify/usb_control/disable
     chmod 0664 /sys/class/usb_notify/usb_control/disable
 
-# ARGOSD
-service argos-daemon /system/bin/argosd
-    class main
-    user system
-    group system radio
-
 # MobiCore startup
 service mobicore /system/bin/mcDriverDaemon -r /system/app/FFFFFFFF000000000000000000000001.drbin -r /system/app/mcRegistry/ffffffffd0000000000000000000000a.tlbin -r /system/app/mcRegistry/ffffffffd00000000000000000000016.tlbin
     class core
@@ -742,3 +734,12 @@ on property:sys.boot_completed=1
 service charger /charger
     class charger
     seclabel u:r:charger:s0
+
+service sswap /vendor/bin/sswap -s -f 2048
+    class core
+    user root
+    group root
+    oneshot
+
+on property:sys.boot_completed=1
+    start sswap

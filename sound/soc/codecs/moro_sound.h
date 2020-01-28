@@ -43,7 +43,7 @@ int get_speaker_gain(void);
 #define HEADPHONE_MAX 			190
 
 // earpiece levels
-#define EARPIECE_DEFAULT		128
+#define EARPIECE_DEFAULT		129
 #define EARPIECE_MIN 			60
 #define EARPIECE_MAX 			190
 
